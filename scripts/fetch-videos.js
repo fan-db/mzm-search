@@ -99,14 +99,14 @@ function extractNumbering(description, title) {
 function extractGuests(description) {
   const lines = description.split('\n').map(l => l.trim()).filter(Boolean);
 
-  const guests = [];
+  // 一旦、今まで通り「🔶行→メイン、↪行→サブメンバー」の構造で読み取る
+  const rawGuests = [];
   let current = null;
 
-  // 名前の行からURLやSNSアイコンを取り除き、名前だけを残す
   function cleanName(rawName) {
     return rawName
-      .replace(/https?:\/\/\S+/g, '') // URL除去
-      .replace(/[🗞🎬]/g, '')          // SNSアイコン除去
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[🗞🎬]/g, '')
       .trim();
   }
 
@@ -115,7 +115,7 @@ function extractGuests(description) {
       const name = cleanName(line.replace('🔶', ''));
       if (name) {
         current = { name, members: [] };
-        guests.push(current);
+        rawGuests.push(current);
       }
     } else if (line.startsWith('↪') && current) {
       const member = cleanName(line.replace('↪', ''));
@@ -123,7 +123,19 @@ function extractGuests(description) {
     }
   }
 
-  return guests;
+  // 個人名のみのフラットな配列に変換する
+  // ・メンバー(↪)があるグループは、メンバーの個人名だけを採用（グループ名自体は捨てる）
+  // ・メンバーがいない🔶は、それ自体を個人名として採用
+  const individualNames = [];
+  for (const g of rawGuests) {
+    if (g.members.length > 0) {
+      individualNames.push(...g.members);
+    } else {
+      individualNames.push(g.name);
+    }
+  }
+
+  return individualNames;
 }
 
 // --- メイン処理 ---

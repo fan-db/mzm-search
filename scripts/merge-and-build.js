@@ -12,15 +12,7 @@ const OUTPUT_FILE = 'src/data/videos.json';
 // 例: [{name: "Marpril", members: ["立花鈴", "谷田透佳"]}] → "Marpril（立花鈴, 谷田透佳）"
 function formatGuestsAuto(guestsAuto) {
   if (!guestsAuto || guestsAuto.length === 0) return '';
-
-  return guestsAuto
-    .map(g => {
-      if (g.members && g.members.length > 0) {
-        return `${g.name}（${g.members.join(', ')}）`;
-      }
-      return g.name;
-    })
-    .join(', ');
+  return guestsAuto.join(', '); // 個人名だけのシンプルな配列になったので、そのまま繋げるだけでOK
 }
 
 async function main() {

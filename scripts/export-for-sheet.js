@@ -10,9 +10,7 @@ const OUTPUT_FILE = 'data/overrides-template.csv';
 
 function formatGuestsAuto(guestsAuto) {
   if (!guestsAuto || guestsAuto.length === 0) return '';
-  return guestsAuto
-    .map(g => (g.members?.length > 0 ? `${g.name}（${g.members.join(', ')}）` : g.name))
-    .join(', ');
+  return guestsAuto.join(', '); // 個人名だけのシンプルな配列になったので、そのまま繋げるだけでOK
 }
 
 function csvEscape(value) {
