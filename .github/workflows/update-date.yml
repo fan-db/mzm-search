@@ -1,10 +1,12 @@
 name: Update Data
 
 on:
-  workflow_dispatch:   # GitHubの画面から手動で「実行」ボタンを押せるようにする
+  workflow_dispatch:
 
 permissions:
-  contents: write       # このワークフローがリポジトリに変更を書き戻せるようにする
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   update:
@@ -41,3 +43,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/ src/data/
           git diff --staged --quiet && echo "変更なし" || (git commit -m "自動データ更新" && git push)
+
+      - name: ⑥ サイトをビルド
+        run: npm run build
+
+      - name: ⑦ GitHub Pages用にアップロード
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: ⑧ GitHub Pagesへデプロイ
+        uses: actions/deploy-pages@v4
