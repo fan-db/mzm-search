@@ -49,7 +49,12 @@ async function main() {
     const guest = override.guest_confirmed || formatGuestsAuto(video.guests_auto);
 
     // ③ カテゴリ：confirmed優先、なければ未分類
-    const category = override.category_confirmed || '未分類';
+    // カンマ区切りの複数カテゴリに対応するため、配列として保持する
+    const categoryRaw = override.category_confirmed || '未分類';
+    const categories = categoryRaw
+      .split(',')
+      .map(c => c.trim())
+      .filter(Boolean); // 空文字(連続カンマなどのミス)を除去
 
     // ④ タグ・検索用の自由記述文章
     const tags = override.tags || '';
@@ -62,7 +67,7 @@ async function main() {
       url: video.url,
       publishedAt: video.publishedAt,
       guest,
-      category,
+      categories,
       tags,
     });
   }

@@ -2,7 +2,8 @@
 import Base from '../layouts/Base.astro';
 import videos from '../data/videos.json';
 
-const categories = [...new Set(videos.map(v => v.category))].sort();
+// 全動画のカテゴリ配列を1つに展開してから、重複なく取り出す
+const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
 ---
 <Base title="MZM Fan Archive">
   <div class="controls">
@@ -13,10 +14,23 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
       aria-label="動画を検索"
     />
     <div class="controls-row">
-      <select id="category-select" aria-label="カテゴリで絞り込み">
-        <option value="">すべてのカテゴリ</option>
-        {categories.map(c => <option value={c}>{c}</option>)}
-      </select>
+      <div class="category-dropdown">
+        <button type="button" id="category-toggle" class="category-toggle" aria-expanded="false">
+          カテゴリで絞り込み <span id="category-count"></span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div id="category-panel" class="category-panel" hidden>
+          {categories.map(c => (
+            <label class="category-option">
+              <input type="checkbox" class="category-checkbox" value={c} />
+              {c}
+            </label>
+          ))}
+        </div>
+      </div>
+
       <select id="sort-select" aria-label="並び替え">
         <option value="asc">番号: 古い順</option>
         <option value="desc">番号: 新しい順</option>
@@ -32,7 +46,7 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
         class="video-row"
         data-title={v.title}
         data-guest={v.guest}
-        data-category={v.category}
+        data-categories={v.categories.join(',')}
         data-tags={v.tags}
         data-numbering={v.numbering}
       >
@@ -44,12 +58,16 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
           {v.guest && <p class="video-guest">ゲスト: {v.guest}</p>}
           <p class="video-meta">
             <span class="numbering-badge">#{v.numbering}</span>
-            <span class="category-pill">{v.category}</span>
+            <span class="category-pill">{v.categories.join(', ')}</span>
             <span class="date">{new Date(v.publishedAt).toLocaleDateString('ja-JP')}</span>
           </p>
         </div>
         <a href={v.url} target="_blank" rel="noopener noreferrer" class="youtube-button">
-          YouTubeで見る ↗
+          YouTubeで見る
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
+          </svg>
         </a>
       </li>
     ))}
@@ -91,6 +109,7 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
       display: flex;
       gap: 0.6rem;
       margin-top: 0.6rem;
+      position: relative;
     }
 
     .controls-row select {
@@ -101,6 +120,76 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
       background: var(--surface);
       color: var(--text);
       font-family: inherit;
+    }
+
+    .category-dropdown {
+      position: relative;
+      flex: 1;
+    }
+
+    .category-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    #category-count {
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    .chevron {
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .category-toggle[aria-expanded="true"] .chevron {
+      transform: rotate(180deg);
+    }
+
+    .category-panel {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      max-height: 240px;
+      overflow-y: auto;
+      z-index: 20;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .category-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.3rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .category-option:hover {
+      background: var(--surface-hover);
+    }
+
+    .category-checkbox {
+      accent-color: var(--accent-violet);
+      width: 16px;
+      height: 16px;
     }
 
     .result-count {
@@ -167,9 +256,8 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
       margin: 0 0 0.3rem;
       color: var(--text-muted);
       font-size: 0.85rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: break-word;
     }
 
     .video-meta {
@@ -181,7 +269,6 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
       flex-wrap: wrap;
     }
 
-    /* ナンバリング：枠なし、文字自体にシアン→マゼンタのグラデーション */
     .numbering-badge {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 0.9rem;
@@ -201,10 +288,11 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
 
     .date { color: var(--text-muted); }
 
-    /* YouTubeボタン：単色に統一、視認性重視 */
     .youtube-button {
       flex-shrink: 0;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
       padding: 0.6rem 1.1rem;
       background: var(--accent-violet);
       color: #ffffff;
@@ -225,27 +313,60 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
 
   <script>
     const searchInput = document.getElementById('search-input');
-    const categorySelect = document.getElementById('category-select');
     const sortSelect = document.getElementById('sort-select');
     const list = document.getElementById('video-list');
     const resultCount = document.getElementById('result-count');
     const rows = Array.from(document.querySelectorAll('.video-row'));
 
+    const categoryToggle = document.getElementById('category-toggle');
+    const categoryPanel = document.getElementById('category-panel');
+    const categoryCount = document.getElementById('category-count');
+    const categoryCheckboxes = Array.from(document.querySelectorAll('.category-checkbox'));
+
+    categoryToggle.addEventListener('click', () => {
+      const isOpen = categoryPanel.hidden === false;
+      categoryPanel.hidden = isOpen;
+      categoryToggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!categoryToggle.contains(e.target) && !categoryPanel.contains(e.target)) {
+        categoryPanel.hidden = true;
+        categoryToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    function getSelectedCategories() {
+      return categoryCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+    }
+
+    function updateCategoryCountLabel() {
+      const n = getSelectedCategories().length;
+      categoryCount.textContent = n > 0 ? `(${n})` : '';
+    }
+
     function applyFilters() {
       const keyword = searchInput.value.trim().toLowerCase();
-      const category = categorySelect.value;
+      const selectedCategories = getSelectedCategories();
       let visibleCount = 0;
 
       for (const row of rows) {
         const haystack = [
           row.dataset.title,
           row.dataset.guest,
-          row.dataset.category,
+          row.dataset.categories,
           row.dataset.tags,
         ].join(' ').toLowerCase();
 
         const matchesKeyword = !keyword || haystack.includes(keyword);
-        const matchesCategory = !category || row.dataset.category === category;
+
+        // その動画が持つカテゴリ一覧(配列)を取り出す
+        const videoCategories = row.dataset.categories.split(',');
+        // 選択中のカテゴリのうち、1つでもこの動画が持っていればOK
+        const matchesCategory =
+          selectedCategories.length === 0 ||
+          selectedCategories.some(sc => videoCategories.includes(sc));
+
         const visible = matchesKeyword && matchesCategory;
 
         row.style.display = visible ? '' : 'none';
@@ -265,8 +386,14 @@ const categories = [...new Set(videos.map(v => v.category))].sort();
     }
 
     searchInput.addEventListener('input', applyFilters);
-    categorySelect.addEventListener('change', applyFilters);
     sortSelect.addEventListener('change', applySort);
+    categoryCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        updateCategoryCountLabel();
+        applyFilters();
+      });
+    });
+
     applyFilters();
   </script>
 </Base>
